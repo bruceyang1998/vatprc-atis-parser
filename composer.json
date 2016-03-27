@@ -1,0 +1,5 @@
+{
+    "require": {
+        "sagem-cassiopee/php-metar-decoder": "dev-master"
+    }
+}
