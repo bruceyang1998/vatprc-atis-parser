@@ -1,76 +1,15 @@
 <?php
 require_once 'vendor/autoload.php';
-
 use MetarDecoder\MetarDecoder;
 
 $raw_metar = $_GET['metar'];
 $decoder = new MetarDecoder();
 $d = $decoder->parse($raw_metar);
-
-/*//context information
-$d->isValid(); //true
-$d->getRawMetar(); //'METAR LFPO 231027Z AUTO 24004G09MPS 2500 1000NW R32/0400 R08C/0004D +FZRA VCSN //FEW015 17/10 Q1009 REFZRA WS R03'
-$d->getType(); //'METAR'
-$d->getIcao(); //'LFPO'
-$d->getDay(); //23
-$d->getTime(); //'10:27 UTC'
-$d->getStatus(); //'AUTO'
-
-//surface wind*/
 $sw = $d->getSurfaceWind(); //SurfaceWind object
-/*
-$sw->getMeanSpeed()->getValue(); //4
-$sw->getSpeedVariations()->getValue(); //9
-$sw->getMeanSpeed()->getUnit(); //'m/s'
-
-//visibility*/
 $v = $d->getVisibility(); //Visibility object
-/*$v->getVisibility()->getValue(); //2500
-$v->getVisibility()->getUnit(); //'m'
-$v->getMinimumVisibility()->getValue(); //1000
-$v->getMinimumVisibilityDirection(); //'NW'
-$v->hasNDV(); //false
-
-//runway visual range*/
 $rvr = $d->getRunwaysVisualRange(); //RunwayVisualRange array
-/*$rvr[0]->getRunway(); //'32'
-$rvr[0]->getVisualRange()->getValue(); //400
-$rvr[0]->getPastTendency(); //''
-$rvr[1]->getRunway(); //'08C'
-$rvr[1]->getVisualRange()->getValue(); //4
-$rvr[1]->getPastTendency(); //'D'
-
-//present weather*/
 $pw = $d->getPresentWeather(); //WeatherPhenomenon array
-/*$pw[0]->getIntensityProximity(); //'+'
-$pw[0]->getCharacteristics(); //'FZ'
-$pw[0]->getTypes(); //array('RA')
-$pw[1]->getIntensityProximity(); //'VC'
-$pw[1]->getCharacteristics(); //null
-$pw[1]->getTypes(); //array('SN')
-
-// clouds*/
 $cld = $d->getClouds(); //CloudLayer array
-/*$cld[0]->getAmount(); //'FEW'
-$cld[0]->getBaseHeight()->getValue(); //1500
-$cld[0]->getBaseHeight()->getUnit(); //'ft'
-
-// temperature
-$d->getAirTemperature()->getValue(); //17
-$d->getAirTemperature()->getUnit(); //'deg C'
-$d->getDewPointTemperature()->getValue(); //10
-
-// pressure
-$d->getPressure()->getValue(); //1009
-$d->getPressure()->getUnit(); //'hPa'
-
-// recent weather
-$rw = $d->getRecentWeather();
-$rw->getCharacteristics(); //'FZ'
-$rw->getTypes(); //array('RA')
-
-// windshears
-$d->getWindshearRunways(); //array('03')*/
 
 if ($d->isValid() == false) {
     exit('Invalid METAR.');
@@ -168,7 +107,6 @@ if (strpos($raw_metar, 'CAVOK') !== false) {
                     print('[downward]');
                     break;
                 case 'N':
-                    print('[no change]');
                     break;
                 case 'U':
                     print('[upward]');
@@ -290,7 +228,6 @@ if (strpos($raw_metar, 'CAVOK') !== false) {
         }
     }
 }
-
 if (strpos($raw_metar, 'CLR') === true or strpos($raw_metar, 'SKC') === true) {
     print('[sky clear]');
 }
@@ -327,4 +264,3 @@ print('[temperature]' . $d->getAirTemperature()->getValue() .
     '[' . $d->getDewPointTemperature()->getUnit() . '][QNH]' .
     $d->getPressure()->getValue() . '[' . $d->getPressure()->getUnit() . ']');
 print('[advise on initial contact you have info]' . $_GET['info'] . '[and confirm you will implement RNAV procedures]');
-/*print('[ATIS.gq Alpha Version, NOT FOR OPERATIONAL USE]');*/
