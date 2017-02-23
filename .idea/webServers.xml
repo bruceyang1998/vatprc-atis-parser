@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="a1dc136d-464a-429a-b46e-daf7891e4151" name="ATIS.gq" url="http://atis.gq">
+        <fileTransfer host="104.131.149.53" port="22" privateKey="C:\Users\Bruce\.ssh\BruceLenovo10" rootFolder="/home/wwwroot/atis.gq" accessType="SFTP" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
