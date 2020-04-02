@@ -11,6 +11,7 @@ $visObj = $decoded->getVisibility(); //Visibility object
 $rvr = $decoded->getRunwaysVisualRange(); //RunwayVisualRange array
 $phenomenon = $decoded->getPresentWeather(); //WeatherPhenomenon array
 $clouds = $decoded->getClouds(); //CloudLayer array
+$windShearAlerts = $decoded->getWindshearRunways();
 
 var_dump(($decoded));
 
@@ -302,4 +303,20 @@ print('Temperature ' . $decoded->getAirTemperature()->getValue() .
     ' ' . $decoded->getAirTemperature()->getUnit() . ', dewpoint ' . $decoded->getDewPointTemperature()->getValue() .
     ' ' . $decoded->getDewPointTemperature()->getUnit() . ', QNH ' .
     $decoded->getPressure()->getValue() . ' ' . $decoded->getPressure()->getUnit() . '. ');
-print('Advise on initial contact you have info ' . $_GET['info'] . ' and confirm you will implement RNAV procedures');
+
+// Wind Shear Alert
+if ($decoded->getWindshearAllRunways()) {
+    print('Wind shear on all runways. ');
+} else if ($windShearAlerts) {
+    print('Wind shear on runway ');
+    foreach ($windShearAlerts as $index => $runway) {
+        if ($index >= 1) {
+            print(', ');
+        }
+        print($runway);
+    }
+    print('. ');
+}
+
+print('Advise on initial contact you have info ' . $_GET['info'] . ' and confirm you will implement RNAV procedures.');
+
