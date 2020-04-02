@@ -3,6 +3,8 @@ require_once 'vendor/autoload.php';
 
 use MetarDecoder\MetarDecoder;
 
+include(__DIR__ . '/airports.php');
+
 $rawMetar = $_GET['metar'];
 $decoder = new MetarDecoder();
 $decoded = $decoder->parse($rawMetar);
@@ -13,14 +15,13 @@ $phenomenon = $decoded->getPresentWeather(); //WeatherPhenomenon array
 $clouds = $decoded->getClouds(); //CloudLayer array
 $windShearAlerts = $decoded->getWindshearRunways();
 
-var_dump(($decoded));
-
 if ($decoded->isValid() == false) {
     exit('Invalid METAR.');
 }
 
 // Airport, date & time
-print($decoded->getIcao() . ', information ' . $_GET['info'] . ', ' . substr($rawMetar, 7, 4) . ' UTC');
+$airportName = (isset($airports[$decoded->getIcao()])) ? $airports[$decoded->getIcao()] : $decoded->getIcao();
+print($airportName . ', information ' . $_GET['info'] . ', ' . substr($rawMetar, 7, 4) . ' UTC');
 if (strpos($decoded->getTime(), ':00') === false and strpos($decoded->getTime(), ':30') === false) {
     print(', special');
 }
