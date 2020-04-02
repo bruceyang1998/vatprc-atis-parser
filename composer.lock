@@ -4,7 +4,6 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "574b0250de495b1004f7f3bd56e4efb9",
     "content-hash": "ecea796f6b0b90990c0c277b038e114e",
     "packages": [
         {
@@ -12,13 +11,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/SagemCassiopee/php-metar-decoder.git",
-                "reference": "ed920c93a6025af9bf6787af7683246c37b1d648"
+                "url": "https://github.com/SafranCassiopee/php-metar-decoder.git",
+                "reference": "0de2b1b0a9bce7b73bff719348baf3b0a961dc7f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SagemCassiopee/php-metar-decoder/zipball/ed920c93a6025af9bf6787af7683246c37b1d648",
-                "reference": "ed920c93a6025af9bf6787af7683246c37b1d648",
+                "url": "https://api.github.com/repos/SafranCassiopee/php-metar-decoder/zipball/0de2b1b0a9bce7b73bff719348baf3b0a961dc7f",
+                "reference": "0de2b1b0a9bce7b73bff719348baf3b0a961dc7f",
                 "shasum": ""
             },
             "require": {
@@ -45,7 +44,7 @@
                 }
             ],
             "description": "METAR weather observation decoder",
-            "time": "2016-03-18 21:37:22"
+            "time": "2020-02-11T13:31:33+00:00"
         }
     ],
     "packages-dev": [],
