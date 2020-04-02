@@ -2,20 +2,20 @@
 require_once 'vendor/autoload.php';
 use MetarDecoder\MetarDecoder;
 
-$raw_metar = $_GET['metar'];
+$rawMetar = $_GET['metar'];
 $decoder = new MetarDecoder();
-$d = $decoder->parse($raw_metar);
-$sw = $d->getSurfaceWind(); //SurfaceWind object
-$v = $d->getVisibility(); //Visibility object
-$rvr = $d->getRunwaysVisualRange(); //RunwayVisualRange array
-$pw = $d->getPresentWeather(); //WeatherPhenomenon array
-$cld = $d->getClouds(); //CloudLayer array
+$decoded = $decoder->parse($rawMetar);
+$surfaceWindObj = $decoded->getSurfaceWind(); //SurfaceWind object
+$visObj = $decoded->getVisibility(); //Visibility object
+$rvr = $decoded->getRunwaysVisualRange(); //RunwayVisualRange array
+$phenomenon = $decoded->getPresentWeather(); //WeatherPhenomenon array
+$clouds = $decoded->getClouds(); //CloudLayer array
 
-if ($d->isValid() == false) {
+if ($decoded->isValid() == false) {
     exit('Invalid METAR.');
 }
-print('[' . $d->getIcao() . '][info]' . $_GET['info'] . ' ' . substr($raw_metar, 7, 4) . '[UTC]');
-if (strpos($d->getTime(), ':00') === false and strpos($d->getTime(), ':30') === false) {
+print('[' . $decoded->getIcao() . '][info]' . $_GET['info'] . ' ' . substr($rawMetar, 7, 4) . '[UTC]');
+if (strpos($decoded->getTime(), ':00') === false and strpos($decoded->getTime(), ':30') === false) {
     print('[special]');
 }
 if ($_GET['dep'] == $_GET['arr']) {
@@ -25,42 +25,42 @@ if ($_GET['dep'] == $_GET['arr']) {
 }
 print('[expect][' . $_GET['apptype'] . '][approach][runway]' . $_GET['arr'] . '[wind]');
 
-if ($sw->getMeanSpeed()->getValue() == 0) {
+if ($surfaceWindObj->getMeanSpeed()->getValue() == 0) {
     print('[calm]');
 } else {
-    if ($sw->withVariableDirection() == true) {
+    if ($surfaceWindObj->withVariableDirection() == true) {
         print('[variable]');
     } else {
-        if ($sw->getMeanDirection()->getValue() < 100) {
+        if ($surfaceWindObj->getMeanDirection()->getValue() < 100) {
             print('0');
         }
-        print($sw->getMeanDirection()->getValue() . '[degrees]');
+        print($surfaceWindObj->getMeanDirection()->getValue() . '[degrees]');
     }
-    print('[at]' . $sw->getMeanSpeed()->getValue() . '[' . $sw->getMeanSpeed()->getUnit() . ']');
+    print('[at]' . $surfaceWindObj->getMeanSpeed()->getValue() . '[' . $surfaceWindObj->getMeanSpeed()->getUnit() . ']');
 }
-If ($sw->getSpeedVariations() != null) {
-    print('[gusting to]' . $sw->getSpeedVariations()->getValue() . '[' . $sw->getMeanSpeed()->getUnit() . ']');
+If ($surfaceWindObj->getSpeedVariations() != null) {
+    print('[gusting to]' . $surfaceWindObj->getSpeedVariations()->getValue() . '[' . $surfaceWindObj->getMeanSpeed()->getUnit() . ']');
 }
-if ($sw->getDirectionVariations() != null) {
+if ($surfaceWindObj->getDirectionVariations() != null) {
     print('[variable between]');
-    if ($sw->getDirectionVariations()[0]->getValue() < 100) {
+    if ($surfaceWindObj->getDirectionVariations()[0]->getValue() < 100) {
         print('0');
     }
-    print($sw->getDirectionVariations()[0]->getValue() . '[and]');
-    if ($sw->getDirectionVariations()[1]->getValue() < 100) {
+    print($surfaceWindObj->getDirectionVariations()[0]->getValue() . '[and]');
+    if ($surfaceWindObj->getDirectionVariations()[1]->getValue() < 100) {
         print('0');
     }
-    print($sw->getDirectionVariations()[1]->getValue() . '[degrees]');
+    print($surfaceWindObj->getDirectionVariations()[1]->getValue() . '[degrees]');
 }
-if (strpos($raw_metar, 'CAVOK') !== false) {
+if (strpos($rawMetar, 'CAVOK') !== false) {
     print('[CAVOK]');
 } else {
     print('[visibility]');
-    if ($v->getVisibility()->getValue() == 9999) {
+    if ($visObj->getVisibility()->getValue() == 9999) {
         print('10[kilometers]');
     } else {
-        print('{' . $v->getVisibility()->getValue() . '}[');
-        switch ($v->getVisibility()->getUnit()) {
+        print('{' . $visObj->getVisibility()->getValue() . '}[');
+        switch ($visObj->getVisibility()->getUnit()) {
             case 'm':
                 print('meter');
                 break;
@@ -68,7 +68,7 @@ if (strpos($raw_metar, 'CAVOK') !== false) {
                 print('mile');
                 break;
         }
-        if ($v->getVisibility()->getValue() == 1) {
+        if ($visObj->getVisibility()->getValue() == 1) {
             print(']');
         } else {
             print('s]');
@@ -114,10 +114,10 @@ if (strpos($raw_metar, 'CAVOK') !== false) {
             }
         }
     }
-    if (strpos($raw_metar, 'NSC') === true) {
+    if (strpos($rawMetar, 'NSC') === true) {
         print('[no significant clouds]');
     }
-    foreach ($pw as $pwn) {
+    foreach ($phenomenon as $pwn) {
         if ((string)$pwn->getIntensityProximity() !== '') {
             switch ((string)$pwn->getIntensityProximity()) {
                 case '+':
@@ -228,10 +228,10 @@ if (strpos($raw_metar, 'CAVOK') !== false) {
         }
     }
 }
-if (strpos($raw_metar, 'CLR') === true or strpos($raw_metar, 'SKC') === true) {
+if (strpos($rawMetar, 'CLR') === true or strpos($rawMetar, 'SKC') === true) {
     print('[sky clear]');
 }
-foreach ($cld as $cldn) {
+foreach ($clouds as $cldn) {
     switch ($cldn->getAmount()) {
         case 'FEW':
             print('[few]');
@@ -259,8 +259,8 @@ foreach ($cld as $cldn) {
             break;
     }
 }
-print('[temperature]' . $d->getAirTemperature()->getValue() .
-    '[' . $d->getAirTemperature()->getUnit() . '][dewpoint]' . $d->getDewPointTemperature()->getValue() .
-    '[' . $d->getDewPointTemperature()->getUnit() . '][QNH]' .
-    $d->getPressure()->getValue() . '[' . $d->getPressure()->getUnit() . ']');
+print('[temperature]' . $decoded->getAirTemperature()->getValue() .
+    '[' . $decoded->getAirTemperature()->getUnit() . '][dewpoint]' . $decoded->getDewPointTemperature()->getValue() .
+    '[' . $decoded->getDewPointTemperature()->getUnit() . '][QNH]' .
+    $decoded->getPressure()->getValue() . '[' . $decoded->getPressure()->getUnit() . ']');
 print('[advise on initial contact you have info]' . $_GET['info'] . '[and confirm you will implement RNAV procedures]');
