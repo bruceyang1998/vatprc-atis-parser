@@ -322,4 +322,4 @@ if ($decoded->getWindshearAllRunways()) {
     print(', ');
 }
 
-print('Advise on initial contact you have information ' . $_GET['info'] . ', and confirm you will implement RNAV procedures.');
+print('Advise on initial contact you have information ' . $_GET['info'] . ', and confirm you will implement [RNAV] procedures.');
