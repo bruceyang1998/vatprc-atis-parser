@@ -21,11 +21,11 @@ if ($decoded->isValid() == false) {
 
 // Airport, date & time
 $airportName = (isset($airports[$decoded->getIcao()])) ? $airports[$decoded->getIcao()] : $decoded->getIcao();
-print($airportName . ', information ' . $_GET['info'] . ', ' . substr($rawMetar, 7, 4) . ' UTC');
+print($airportName . ' information ' . $_GET['info'] . ', ' . substr($rawMetar, 7, 4) . ' [UTC]');
 if (strpos($decoded->getTime(), ':00') === false and strpos($decoded->getTime(), ':30') === false) {
     print(', special');
 }
-print('. ');
+print(', ');
 
 // Operational Runway
 if ($_GET['dep'] == $_GET['arr']) {
@@ -33,11 +33,11 @@ if ($_GET['dep'] == $_GET['arr']) {
 } else {
     print('Departure runway ' . $_GET['dep'] . ', landing runway ' . $_GET['arr']);
 }
-print('. ');
+print(', ');
 
 // Expect approach method
 print('Expect ' . $_GET['apptype'] . ' approach, runway ' . $_GET['arr']);
-print('. ');
+print(', ');
 
 // Wind
 print('Wind ');
@@ -53,7 +53,7 @@ if ($surfaceWindObj->getMeanSpeed()->getValue() == 0) {
         print($surfaceWindObj->getMeanDirection()->getValue() . ' degrees');
     }
     print(' at ');
-    print($surfaceWindObj->getMeanSpeed()->getValue() . ' ' . $surfaceWindObj->getMeanSpeed()->getUnit());
+    print($surfaceWindObj->getMeanSpeed()->getValue() . ' [' . $surfaceWindObj->getMeanSpeed()->getUnit() . ']');
 }
 if ($surfaceWindObj->getSpeedVariations() != null) {
     print(', gusting to ' . $surfaceWindObj->getSpeedVariations()->getValue() . ' ' . $surfaceWindObj->getMeanSpeed()->getUnit());
@@ -69,16 +69,16 @@ if ($surfaceWindObj->getDirectionVariations() != null) {
     }
     print($surfaceWindObj->getDirectionVariations()[1]->getValue() . ' degrees');
 }
-print('. ');
+print(', ');
 
 // Visibility & Special Weather
 if (strpos($rawMetar, 'CAVOK') !== false) {
-    print('CAVOK');
+    print('[CAVOK]');
 } else {
     // Visibility
     print('Visibility ');
     if ($visObj->getVisibility()->getValue() == 9999) {
-        print('{10} kilometers');
+        print('greater than [10] kilometers');
     } else {
         print('{' . $visObj->getVisibility()->getValue() . '}');
         switch ($visObj->getVisibility()->getUnit()) {
@@ -93,14 +93,14 @@ if (strpos($rawMetar, 'CAVOK') !== false) {
             print('s');
         }
     }
-    print('. ');
+    print(', ');
 
     // RVR
     if ($rvr != null) {
         foreach ($rvr as $runwayRvr) {
             print('Runway ' . $runwayRvr->getRunway() . ' RVR, ');
             if ($runwayRvr->getVisualRange() == null) {
-                print(' variable between {' . $runwayRvr->getVisualRangeInterval()[0]->getValue() . '} and {' . $runwayRvr->getVisualRangeInterval()[1]->getValue() . '}');
+                print(' variable between [' . $runwayRvr->getVisualRangeInterval()[0]->getValue() . '] and [' . $runwayRvr->getVisualRangeInterval()[1]->getValue() . ']');
                 if ($runwayRvr->getVisualRangeInterval()[0]->getUnit() == 'ft') {
                     print(' feet');
                 } elseif ($runwayRvr->getVisualRangeInterval()[0]->getUnit() == 'm') {
@@ -130,13 +130,13 @@ if (strpos($rawMetar, 'CAVOK') !== false) {
                     print(' upward');
                     break;
             }
-            print('. ');
+            print(', ');
         }
     }
 
     // Cloud & Weather Phenomenon
-    if (strpos($rawMetar, 'NSC') === true) {
-        print('No significant clouds. ');
+    if (strpos($rawMetar, 'NSC')) {
+        print('No significant clouds, ');
     }
 
     if ($phenomenon) {
@@ -255,69 +255,71 @@ if (strpos($rawMetar, 'CAVOK') !== false) {
                 print(' in the vicinity');
             }
         }
-        print('. ');
+        print(', ');
     }
 }
-if (strpos($rawMetar, 'CLR') === true or strpos($rawMetar, 'SKC') === true) {
-    print('Sky clear. ');
+if (strpos($rawMetar, 'CLR') or strpos($rawMetar, 'SKC')) {
+    print('Sky clear, ');
 }
 
 // Cloud
-foreach ($clouds as $index => $cloud) {
-    if ($index >= 1) {
-        print(', ');
+if ($clouds) {
+    foreach ($clouds as $index => $cloud) {
+        if ($index >= 1) {
+            print(', ');
+        }
+        switch ($cloud->getAmount()) {
+            case 'FEW':
+                print('Few');
+                break;
+            case 'SCT':
+                print('Scattered');
+                break;
+            case 'BKN':
+                print('Broken');
+                break;
+            case 'OVC':
+                print('Overcast');
+                break;
+            case 'VV':
+                print('Vertical visibility');
+                break;
+        }
+        switch ($cloud->getBaseHeight()->getUnit()) {
+            case 'ft';
+                print(' [' . $cloud->getBaseHeight()->getValue() * 0.3 . ']' . ' meters');
+        }
+        switch ($cloud->getType()) {
+            case 'CB':
+                print(' cumulonimbus');
+                break;
+            case 'TCU':
+                print(' towering cumulus');
+                break;
+        }
     }
-    switch ($cloud->getAmount()) {
-        case 'FEW':
-            print('Few');
-            break;
-        case 'SCT':
-            print('Scattered');
-            break;
-        case 'BKN':
-            print('Broken');
-            break;
-        case 'OVC':
-            print('Overcast');
-            break;
-        case 'VV':
-            print('Vertical visibility');
-            break;
-    }
-    switch ($cloud->getBaseHeight()->getUnit()) {
-        case 'ft';
-            print(' {' . $cloud->getBaseHeight()->getValue() * 0.3 . '}' . ' meters');
-    }
-    switch ($cloud->getType()) {
-        case 'CB':
-            print(' cumulonimbus');
-            break;
-        case 'TCU':
-            print(' towering cumulus');
-            break;
-    }
+    print(', ');
 }
-print('. ');
+
 
 // Miscellaneous
 print('Temperature ' . $decoded->getAirTemperature()->getValue() .
-    ' ' . $decoded->getAirTemperature()->getUnit() . ', dewpoint ' . $decoded->getDewPointTemperature()->getValue() .
-    ' ' . $decoded->getDewPointTemperature()->getUnit() . ', QNH ' .
-    $decoded->getPressure()->getValue() . ' ' . $decoded->getPressure()->getUnit() . '. ');
+    ' [' . $decoded->getAirTemperature()->getUnit() . '], dewpoint ' . $decoded->getDewPointTemperature()->getValue() .
+    ' [' . $decoded->getDewPointTemperature()->getUnit() . '], QNH ' .
+    $decoded->getPressure()->getValue() . ' [' . $decoded->getPressure()->getUnit() . '], ');
 
 // Wind Shear Alert
 if ($decoded->getWindshearAllRunways()) {
-    print('Wind shear on all runways. ');
+    print('Wind shear, all runways. ');
 } else if ($windShearAlerts) {
-    print('Wind shear on runway ');
+    print('Wind shear, runway ');
     foreach ($windShearAlerts as $index => $runway) {
         if ($index >= 1) {
             print(', ');
         }
         print($runway);
     }
-    print('. ');
+    print(', ');
 }
 
-print('Advise on initial contact you have info ' . $_GET['info'] . ' and confirm you will implement RNAV procedures.');
-
+print('Advise on initial contact you have information ' . $_GET['info'] . ', and confirm you will implement RNAV procedures.');
