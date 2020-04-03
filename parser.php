@@ -1,266 +1,325 @@
 <?php
 require_once 'vendor/autoload.php';
+
 use MetarDecoder\MetarDecoder;
 
-$raw_metar = $_GET['metar'];
-$decoder = new MetarDecoder();
-$d = $decoder->parse($raw_metar);
-$sw = $d->getSurfaceWind(); //SurfaceWind object
-$v = $d->getVisibility(); //Visibility object
-$rvr = $d->getRunwaysVisualRange(); //RunwayVisualRange array
-$pw = $d->getPresentWeather(); //WeatherPhenomenon array
-$cld = $d->getClouds(); //CloudLayer array
+include(__DIR__ . '/airports.php');
 
-if ($d->isValid() == false) {
+$rawMetar = $_GET['metar'];
+$decoder = new MetarDecoder();
+$decoded = $decoder->parse($rawMetar);
+$surfaceWindObj = $decoded->getSurfaceWind(); //SurfaceWind object
+$visObj = $decoded->getVisibility(); //Visibility object
+$rvr = $decoded->getRunwaysVisualRange(); //RunwayVisualRange array
+$phenomenon = $decoded->getPresentWeather(); //WeatherPhenomenon array
+$clouds = $decoded->getClouds(); //CloudLayer array
+$windShearAlerts = $decoded->getWindshearRunways();
+
+if ($decoded->isValid() == false) {
     exit('Invalid METAR.');
 }
-print('[' . $d->getIcao() . '][info]' . $_GET['info'] . ' ' . substr($raw_metar, 7, 4) . '[UTC]');
-if (strpos($d->getTime(), ':00') === false and strpos($d->getTime(), ':30') === false) {
-    print('[special]');
-}
-if ($_GET['dep'] == $_GET['arr']) {
-    print ('[runway]' . $_GET['dep']);
-} else {
-    print('[departure runway]' . $_GET['dep'] . '[landing runway]' . $_GET['arr']);
-}
-print('[expect][' . $_GET['apptype'] . '][approach][runway]' . $_GET['arr'] . '[wind]');
 
-if ($sw->getMeanSpeed()->getValue() == 0) {
-    print('[calm]');
+// Airport, date & time
+$airportName = (isset($airports[$decoded->getIcao()])) ? $airports[$decoded->getIcao()] : $decoded->getIcao();
+print($airportName . ' information ' . $_GET['info'] . ', ' . substr($rawMetar, 7, 4) . ' [UTC]');
+if (strpos($decoded->getTime(), ':00') === false and strpos($decoded->getTime(), ':30') === false) {
+    print(', special');
+}
+print(', ');
+
+// Operational Runway
+if ($_GET['dep'] == $_GET['arr']) {
+    print('Runway ' . $_GET['dep']);
 } else {
-    if ($sw->withVariableDirection() == true) {
-        print('[variable]');
+    print('Departure runway ' . $_GET['dep'] . ', landing runway ' . $_GET['arr']);
+}
+print(', ');
+
+// Expect approach method
+print('Expect ' . $_GET['apptype'] . ' approach, runway ' . $_GET['arr']);
+print(', ');
+
+// Wind
+print('Wind ');
+if ($surfaceWindObj->getMeanSpeed()->getValue() == 0) {
+    print('calm');
+} else {
+    if ($surfaceWindObj->withVariableDirection() == true) {
+        print('variable');
     } else {
-        if ($sw->getMeanDirection()->getValue() < 100) {
+        if ($surfaceWindObj->getMeanDirection()->getValue() < 100) {
             print('0');
         }
-        print($sw->getMeanDirection()->getValue() . '[degrees]');
+        print($surfaceWindObj->getMeanDirection()->getValue() . ' degrees');
     }
-    print('[at]' . $sw->getMeanSpeed()->getValue() . '[' . $sw->getMeanSpeed()->getUnit() . ']');
+    print(' at ');
+    print($surfaceWindObj->getMeanSpeed()->getValue() . ' [' . $surfaceWindObj->getMeanSpeed()->getUnit() . ']');
 }
-If ($sw->getSpeedVariations() != null) {
-    print('[gusting to]' . $sw->getSpeedVariations()->getValue() . '[' . $sw->getMeanSpeed()->getUnit() . ']');
+if ($surfaceWindObj->getSpeedVariations() != null) {
+    print(', gusting to ' . $surfaceWindObj->getSpeedVariations()->getValue() . ' ' . $surfaceWindObj->getMeanSpeed()->getUnit());
 }
-if ($sw->getDirectionVariations() != null) {
-    print('[variable between]');
-    if ($sw->getDirectionVariations()[0]->getValue() < 100) {
+if ($surfaceWindObj->getDirectionVariations() != null) {
+    print(', variable between ');
+    if ($surfaceWindObj->getDirectionVariations()[0]->getValue() < 100) {
         print('0');
     }
-    print($sw->getDirectionVariations()[0]->getValue() . '[and]');
-    if ($sw->getDirectionVariations()[1]->getValue() < 100) {
+    print($surfaceWindObj->getDirectionVariations()[0]->getValue() . ' and ');
+    if ($surfaceWindObj->getDirectionVariations()[1]->getValue() < 100) {
         print('0');
     }
-    print($sw->getDirectionVariations()[1]->getValue() . '[degrees]');
+    print($surfaceWindObj->getDirectionVariations()[1]->getValue() . ' degrees');
 }
-if (strpos($raw_metar, 'CAVOK') !== false) {
+print(', ');
+
+// Visibility & Special Weather
+if (strpos($rawMetar, 'CAVOK') !== false) {
     print('[CAVOK]');
 } else {
-    print('[visibility]');
-    if ($v->getVisibility()->getValue() == 9999) {
-        print('10[kilometers]');
+    // Visibility
+    print('Visibility ');
+    if ($visObj->getVisibility()->getValue() == 9999) {
+        print('greater than [10] kilometers');
     } else {
-        print('{' . $v->getVisibility()->getValue() . '}[');
-        switch ($v->getVisibility()->getUnit()) {
+        print('{' . $visObj->getVisibility()->getValue() . '}');
+        switch ($visObj->getVisibility()->getUnit()) {
             case 'm':
-                print('meter');
+                print(' meter');
                 break;
             case 'SM':
-                print('mile');
+                print(' mile');
                 break;
         }
-        if ($v->getVisibility()->getValue() == 1) {
-            print(']');
-        } else {
-            print('s]');
+        if ($visObj->getVisibility()->getValue() != 1) {
+            print('s');
         }
     }
+    print(', ');
+
+    // RVR
     if ($rvr != null) {
-        foreach ($rvr as $rvrn) {
-            print('[runway]' . $rvrn->getRunway() . '[RVR]');
-            if ($rvrn->getVisualRange() == null) {
-                print('[variable between]{' . $rvrn->getVisualRangeInterval()[0]->getValue() . '}[and]{' . $rvrn->getVisualRangeInterval()[1]->getValue() . '}[');
-                if ($rvrn->getVisualRangeInterval()[0]->getUnit() == 'ft') {
-                    print('feet]');
-                } elseif ($rvrn->getVisualRangeInterval()[0]->getUnit() == 'm') {
-                    print('meter');
-                    if ($rvrn->getVisualRangeInterval()[0]->getValue() == 1) {
-                        print(']');
-                    } else {
-                        print('s]');
+        foreach ($rvr as $runwayRvr) {
+            print('Runway ' . $runwayRvr->getRunway() . ' RVR, ');
+            if ($runwayRvr->getVisualRange() == null) {
+                print(' variable between [' . $runwayRvr->getVisualRangeInterval()[0]->getValue() . '] and [' . $runwayRvr->getVisualRangeInterval()[1]->getValue() . ']');
+                if ($runwayRvr->getVisualRangeInterval()[0]->getUnit() == 'ft') {
+                    print(' feet');
+                } elseif ($runwayRvr->getVisualRangeInterval()[0]->getUnit() == 'm') {
+                    print(' meter');
+                    if ($runwayRvr->getVisualRangeInterval()[0]->getValue() != 1) {
+                        print('s');
                     }
                 }
             } else {
-                print('{' . $rvrn->getVisualRange()->getValue() . '}[');
-                if ($rvrn->getVisualRange()->getUnit() == 'ft') {
-                    print('feet]');
-                } elseif ($rvrn->getVisualRange()->getUnit() == 'm') {
-                    print('meter');
-                    if ($rvrn->getVisualRange()->getValue() == 1) {
-                        print(']');
-                    } else {
-                        print('s]');
+                print('{' . $runwayRvr->getVisualRange()->getValue() . '}');
+                if ($runwayRvr->getVisualRange()->getUnit() == 'ft') {
+                    print(' feet');
+                } elseif ($runwayRvr->getVisualRange()->getUnit() == 'm') {
+                    print(' meter');
+                    if ($runwayRvr->getVisualRange()->getValue() != 1) {
+                        print('s');
                     }
                 }
             }
-            switch ($rvrn->getPastTendency()) {
+            switch ($runwayRvr->getPastTendency()) {
                 case 'D':
-                    print('[downward]');
+                    print(' downward');
                     break;
                 case 'N':
                     break;
                 case 'U':
-                    print('[upward]');
+                    print(' upward');
                     break;
             }
+            print(', ');
         }
     }
-    if (strpos($raw_metar, 'NSC') === true) {
-        print('[no significant clouds]');
+
+    // Cloud & Weather Phenomenon
+    if (strpos($rawMetar, 'NSC')) {
+        print('No significant clouds, ');
     }
-    foreach ($pw as $pwn) {
-        if ((string)$pwn->getIntensityProximity() !== '') {
-            switch ((string)$pwn->getIntensityProximity()) {
-                case '+':
-                    print('[heavy]');
-                    break;
-                case '-':
-                    print('[light]');
-                    break;
+
+    if ($phenomenon) {
+        foreach ($phenomenon as $index => $pwn) {
+            if ($index >= 1) {
+                print(', ');
+            }
+            if ((string) $pwn->getIntensityProximity() !== '') {
+                switch ((string) $pwn->getIntensityProximity()) {
+                    case '+':
+                        print('Heavy');
+                        break;
+                    case '-':
+                        print('Light');
+                        break;
+                }
+            }
+            if ($pwn->getCharacteristics() !== '') {
+                switch ($pwn->getCharacteristics()) {
+                    case 'MI':
+                        print(' shallow');
+                        break;
+                    case 'BC':
+                        print(' patches');
+                        break;
+                    case 'PR':
+                        print(' partial');
+                        break;
+                    case 'DR':
+                        print(' drifting');
+                        break;
+                    case 'BL':
+                        print(' blowing');
+                        break;
+                    case 'SH':
+                        print(' showers');
+                        break;
+                    case 'TS':
+                        print(' thunderstorm');
+                        break;
+                    case 'FZ':
+                        print(' freezing');
+                        break;
+                }
+            }
+            if ($pwn->getTypes()) {
+                foreach ($pwn->getTypes() as $pwntype) {
+                    switch ($pwntype) {
+                        case 'DZ':
+                            print(' drizzle');
+                            break;
+                        case 'RA':
+                            print(' rain');
+                            break;
+                        case 'SN':
+                            print(' snow');
+                            break;
+                        case 'SG':
+                            print(' snow grains');
+                            break;
+                        case 'IC':
+                            print(' ice crystals');
+                            break;
+                        case 'PL':
+                            print(' ice pellets');
+                            break;
+                        case 'GR':
+                            print(' hail');
+                            break;
+                        case 'GS':
+                            print(' snow pellets');
+                            break;
+                        case 'UP':
+                            print(' unknown precipitation');
+                            break;
+                        case 'BR':
+                            print(' mist');
+                            break;
+                        case 'FG':
+                            print(' fog');
+                            break;
+                        case 'FU':
+                            print(' smoke');
+                            break;
+                        case 'VA':
+                            print(' volcanic ash');
+                            break;
+                        case 'DU':
+                            print(' dust');
+                            break;
+                        case 'SA':
+                            print(' sand');
+                            break;
+                        case 'HZ':
+                            print(' haze');
+                            break;
+                        case 'PO':
+                            print(' dust whirls');
+                            break;
+                        case 'SQ':
+                            print(' squalls');
+                            break;
+                        case 'FC':
+                            print(' funnel cloud');
+                            break;
+                        case 'SS':
+                            print(' sandstorm');
+                            break;
+                        case 'DS':
+                            print(' duststorm');
+                            break;
+                    }
+                }
+            }
+            if ((string) $pwn->getIntensityProximity() == 'VC') {
+                print(' in the vicinity');
             }
         }
-        if ($pwn->getCharacteristics() !== '') {
-            switch ($pwn->getCharacteristics()) {
-                case 'MI':
-                    print('[shallow]');
-                    break;
-                case 'BC':
-                    print('[patches]');
-                    break;
-                case 'PR':
-                    print('[partial]');
-                    break;
-                case 'DR':
-                    print('[drifting]');
-                    break;
-                case 'BL':
-                    print('[blowing]');
-                    break;
-                case 'SH':
-                    print('[showers]');
-                    break;
-                case 'TS':
-                    print('[thunderstorm]');
-                    break;
-                case 'FZ':
-                    print('[freezing]');
-                    break;
-            }
-        }
-        foreach ($pwn->getTypes() as $pwntype) {
-            switch ($pwntype) {
-                case 'DZ':
-                    print('[drizzle]');
-                    break;
-                case 'RA':
-                    print('[rain]');
-                    break;
-                case 'SN':
-                    print('[snow]');
-                    break;
-                case 'SG':
-                    print('[snow grains]');
-                    break;
-                case 'IC':
-                    print('[ice crystals]');
-                    break;
-                case 'PL':
-                    print('[ice pellets]');
-                    break;
-                case 'GR':
-                    print('[hail]');
-                    break;
-                case 'GS':
-                    print('[snow pellets]');
-                    break;
-                case 'UP':
-                    print('[unknown precipitation]');
-                    break;
-                case 'BR':
-                    print('[mist]');
-                    break;
-                case 'FG':
-                    print('[fog]');
-                    break;
-                case 'FU':
-                    print('[smoke]');
-                    break;
-                case 'VA':
-                    print('[volcanic ash]');
-                    break;
-                case 'DU':
-                    print('[dust]');
-                    break;
-                case 'SA':
-                    print('[sand]');
-                    break;
-                case 'HZ':
-                    print('[haze]');
-                    break;
-                case 'PO':
-                    print('[dust whirls]');
-                    break;
-                case 'SQ':
-                    print('[squalls]');
-                    break;
-                case 'FC':
-                    print('[funnel cloud]');
-                    break;
-                case 'SS':
-                    print('[sandstorm]');
-                    break;
-                case 'DS':
-                    print('[duststorm]');
-                    break;
-            }
-        }
-        if ((string)$pwn->getIntensityProximity() == 'VC') {
-            print('[in the vicinity]');
-        }
+        print(', ');
     }
 }
-if (strpos($raw_metar, 'CLR') === true or strpos($raw_metar, 'SKC') === true) {
-    print('[sky clear]');
+if (strpos($rawMetar, 'CLR') or strpos($rawMetar, 'SKC')) {
+    print('Sky clear, ');
 }
-foreach ($cld as $cldn) {
-    switch ($cldn->getAmount()) {
-        case 'FEW':
-            print('[few]');
-            break;
-        case 'SCT':
-            print('[scattered]');
-            break;
-        case 'BKN';
-            print('[broken]');
-            break;
-        case 'OVC';
-            print('[overcast]');
-            break;
+
+// Cloud
+if ($clouds) {
+    foreach ($clouds as $index => $cloud) {
+        if ($index >= 1) {
+            print(', ');
+        }
+        switch ($cloud->getAmount()) {
+            case 'FEW':
+                print('Few');
+                break;
+            case 'SCT':
+                print('Scattered');
+                break;
+            case 'BKN':
+                print('Broken');
+                break;
+            case 'OVC':
+                print('Overcast');
+                break;
+            case 'VV':
+                print('Vertical visibility');
+                break;
+        }
+        switch ($cloud->getBaseHeight()->getUnit()) {
+            case 'ft';
+                print(' [' . $cloud->getBaseHeight()->getValue() * 0.3 . ']' . ' meters');
+        }
+        switch ($cloud->getType()) {
+            case 'CB':
+                print(' cumulonimbus');
+                break;
+            case 'TCU':
+                print(' towering cumulus');
+                break;
+        }
     }
-    switch ($cldn->getBaseHeight()->getUnit()) {
-        case 'ft';
-            print('{' . $cldn->getBaseHeight()->getValue() * 0.3 . '}' . '[meters]');
-    }
-    switch ($cldn->getType()) {
-        case 'CB':
-            print('[cumulonimbus]');
-            break;
-        case 'TCU':
-            print('[towering cumulus]');
-            break;
-    }
+    print(', ');
 }
-print('[temperature]' . $d->getAirTemperature()->getValue() .
-    '[' . $d->getAirTemperature()->getUnit() . '][dewpoint]' . $d->getDewPointTemperature()->getValue() .
-    '[' . $d->getDewPointTemperature()->getUnit() . '][QNH]' .
-    $d->getPressure()->getValue() . '[' . $d->getPressure()->getUnit() . ']');
-print('[advise on initial contact you have info]' . $_GET['info'] . '[and confirm you will implement RNAV procedures]');
+
+
+// Miscellaneous
+print('Temperature ' . $decoded->getAirTemperature()->getValue() .
+    ' [' . $decoded->getAirTemperature()->getUnit() . '], dewpoint ' . $decoded->getDewPointTemperature()->getValue() .
+    ' [' . $decoded->getDewPointTemperature()->getUnit() . '], QNH ' .
+    $decoded->getPressure()->getValue() . ' [' . $decoded->getPressure()->getUnit() . '], ');
+
+// Wind Shear Alert
+if ($decoded->getWindshearAllRunways()) {
+    print('Wind shear, all runways. ');
+} else if ($windShearAlerts) {
+    print('Wind shear, runway ');
+    foreach ($windShearAlerts as $index => $runway) {
+        if ($index >= 1) {
+            print(', ');
+        }
+        print($runway);
+    }
+    print(', ');
+}
+
+print('Advise on initial contact you have information ' . $_GET['info'] . ', and confirm you will implement [RNAV] procedures.');
